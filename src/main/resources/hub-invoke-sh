@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# This value should not be updated - the Jenkins
+# build process will, for ANY snapshot build,
+# override the latest snapshot jar.
+
+INVOKE_LATEST_SNAPSHOT=hub-invoke-latest-SNAPSHOT.jar
+
+# This value should be automatically updated by the
+# gradle build process for a non-snapshot build.
+INVOKE_LATEST_RELEASE_VERSION="0.0.1"
+INVOKE_LATEST_RELEASE="hub-invoke-${INVOKE_LATEST_RELEASE_VERSION}.jar"
+
+# If you would like to enable the shell script to use
+# the latest snapshot instead of the latest release,
+# specify INVOKE_USE_SNAPSHOT=1 in your environment.
+# The default is to NOT use snapshots. If you enable
+# snapshots, the jar file will always be downloaded.
+
+INVOKE_USE_SNAPSHOT=${INVOKE_USE_SNAPSHOT:-0}
+
+# To override the default location of /tmp, specify
+# your own INVOKE_JAR_PATH in your environment and
+# *that* location will be used.
+
+INVOKE_JAR_PATH=${INVOKE_JAR_PATH:-/tmp}
+
+JAVAOPTS="$@"
+
+run() {
+  get_invoke
+  run_invoke
+}
+
+get_invoke() {
+  VERSION_FILE_DESTINATION="${INVOKE_JAR_PATH}/hub-invoke-latest-commit-id.txt"
+  CURRENT_VERSION=""
+  if [ -f $VERSION_FILE_DESTINATION ]; then
+    CURRENT_VERSION=$( <$VERSION_FILE_DESTINATION )
+  fi
+
+  curl -o $VERSION_FILE_DESTINATION https://blackducksoftware.github.io/hub-invoke/latest-commit-id.txt
+  LATEST_VERSION=$( <$VERSION_FILE_DESTINATION )
+
+  if [ $INVOKE_USE_SNAPSHOT -eq 1 ]; then
+    echo "will look for snapshot: ${INVOKE_LATEST_SNAPSHOT}"
+    INVOKE_DESTINATION="${INVOKE_JAR_PATH}/${INVOKE_LATEST_SNAPSHOT}"
+    INVOKE_SOURCE=$INVOKE_LATEST_SNAPSHOT
+  else
+    echo "will look for release: ${INVOKE_LATEST_RELEASE}"
+    INVOKE_DESTINATION="${INVOKE_JAR_PATH}/${INVOKE_LATEST_RELEASE}"
+    INVOKE_SOURCE=$INVOKE_LATEST_RELEASE
+  fi
+
+  USE_REMOTE=1
+  if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ] && [ $INVOKE_USE_SNAPSHOT -eq 1 ]; then
+    echo "You don't have the latest snapshot, so the new snapshot will be downloaded."
+  elif [ ! -f $INVOKE_DESTINATION ]; then
+    echo "You don't have the current file, so it will be downloaded."
+  else
+    echo "You have already downloaded the latest file, so the local file will be used."
+    USE_REMOTE=0
+  fi
+
+  if [ $USE_REMOTE -eq 1 ]; then
+    echo "getting ${INVOKE_SOURCE} from remote"
+    curl -o $INVOKE_DESTINATION https://blackducksoftware.github.io/hub-invoke/$INVOKE_SOURCE
+    echo "saved ${INVOKE_SOURCE} to ${INVOKE_DESTINATION}"
+  fi
+}
+
+run_invoke() {
+  JAVACMD="java -jar ${INVOKE_DESTINATION}"
+  echo "running invoke: ${JAVACMD} ${JAVAOPTS}"
+  rm $INVOKE_JAR_PATH/hub-invoke-java.sh
+  echo "#!/bin/sh" >> $INVOKE_JAR_PATH/hub-invoke-java.sh
+  echo "" >> $INVOKE_JAR_PATH/hub-invoke-java.sh
+  echo $JAVACMD $JAVAOPTS >> $INVOKE_JAR_PATH/hub-invoke-java.sh
+  source $INVOKE_JAR_PATH/hub-invoke-java.sh
+}
+
+run

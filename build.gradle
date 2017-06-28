@@ -1,0 +1,85 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath('org.springframework.boot:spring-boot-gradle-plugin:1.5.2.RELEASE')
+        classpath "org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.1"
+    }
+}
+
+plugins {
+    id 'groovy'
+    id 'eclipse'
+    id 'maven'
+    id 'org.springframework.boot' version '1.5.2.RELEASE'
+    id 'jacoco'
+    id 'com.github.kt3k.coveralls' version '2.8.1'
+    id 'com.github.hierynomus.license' version '0.14.0'
+}
+
+tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
+tasks.withType(GroovyCompile) { options.encoding = 'UTF-8' }
+
+group = 'com.blackducksoftware.integration'
+
+version = '0.0.1-SNAPSHOT'
+
+def versionFile = new File("${projectDir}/src/main/resources/version.txt")
+versionFile.delete()
+versionFile << version
+
+// the override.snaphot property should be set to true for a CI build so
+// that the version is omitted from a snapshot build artifact
+if (version.contains('SNAPSHOT') && "true" == project.findProperty('override.snapshot')) {
+    version = 'latest-SNAPSHOT'
+}
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+build {
+    doLast {
+        def shellScriptTemplateFile = new File("${projectDir}/src/main/resources/hub-invoke-sh")
+        def shellScriptContents = shellScriptTemplateFile.getText('UTF-8')
+        if (!version.contains('SNAPSHOT')) {
+            shellScriptContents = shellScriptContents.replaceFirst("INVOKE_LATEST_RELEASE_VERSION=\\S*\n", "INVOKE_LATEST_RELEASE_VERSION=\"${version}\"\n")
+            shellScriptTemplateFile.delete()
+            shellScriptTemplateFile << shellScriptContents
+        }
+        def shellScriptFile = new File("${buildDir}/hub-invoke.sh")
+        shellScriptFile.delete()
+        shellScriptFile << shellScriptContents
+        shellScriptFile.setExecutable(true)
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter'
+    compile 'org.codehaus.groovy:groovy-all:2.4.11'
+
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+}
+
+springBoot { mainClass = 'com.blackducksoftware.integration.hub.invoke.Application' }
+
+jacocoTestReport {
+    reports { xml.enabled = true }
+}
+
+license {
+    header = file('HEADER')
+    ext.year = Calendar.getInstance().get(Calendar.YEAR)
+    ignoreFailures = true
+    includes (["**/*.groovy", "**/*.java"])
+    exclude "/src/test/*"
+}
+
+tasks.licenseMain.dependsOn(licenseFormatMain)
