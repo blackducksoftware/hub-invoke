@@ -1,0 +1,15 @@
+{
+  "description": "this is a test for hub-invoke",
+  "name": "hub-invoke test",
+  "projectLevelAdjustments": true,
+  "projectOwner": "Integrations",
+  "projectTier": 1,
+  "versionRequest": {
+    "distribution": "EXTERNAL",
+    "nickname": "string",
+    "phase": "PLANNING",
+    "releaseComments": "this is a release comment",
+    "releasedOn": "2017-06-28T14:37:42.956Z",
+    "versionName": "0.0.1-SNAPSHOT"
+  }
+}

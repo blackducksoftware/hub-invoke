@@ -26,19 +26,25 @@ import javax.annotation.PostConstruct
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 
 @SpringBootApplication
 class Application {
+	
+	@Autowired
+	HubInvoker hubInvoker
+	
     private final Logger logger = LoggerFactory.getLogger(Application.class)
 
     static void main(final String[] args) {
         new SpringApplicationBuilder(Application.class).logStartupInfo(false).run(args)
+		
     }
 
     @PostConstruct
     void init() {
-        logger.info("Hello Patrick!")
+		hubInvoker.connectToHub(logger)
     }
 }
