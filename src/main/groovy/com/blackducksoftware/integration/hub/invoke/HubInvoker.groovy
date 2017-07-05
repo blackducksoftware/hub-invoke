@@ -82,7 +82,13 @@ class HubInvoker {
 
 	@Value('${invoke.hub.api.query.variables}')
 	String hubApiQueryVariables
-
+	
+	@Value('${invoke.hub.api.query.names}')
+	String hubApiQueryNames
+	
+	@Value('${invoke.hub.api.query.values}')
+	String hubApiQueryValues
+	
 	void connectToHub(Logger log) {
 		Slf4jIntLogger logger = new Slf4jIntLogger(log)
 
@@ -90,22 +96,26 @@ class HubInvoker {
 		RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger)
 		restConnection.connect();
 		HubRequest hubRequest = new HubRequest(restConnection)
-
+		
 		hubRequest.url = hubUrl
 		hubRequest.addUrlSegments(Arrays.asList(hubApiEndpoint.split("/")))
-
-		if (!hubApiQueryVariables.equalsIgnoreCase("")) {
-			hubRequest.q = hubApiQueryVariables
-		}
 		
-		println (hubRequest.buildHttpUrl())
-
+		if (!hubApiQueryNames.isEmpty() && !hubApiQueryValues.isEmpty()) {
+			String[] names = hubApiQueryNames.split("&")
+			String[] vals = hubApiQueryValues.split("&")
+			if (names.length == vals.length) {
+				for (int i = 0; i < names.length; i++) {
+					hubRequest.addQueryParameter(names[i], vals[i])
+				}
+			}
+		}
+			
 		Response response
 		if (hubApiVerb.equalsIgnoreCase("get")) {
 			response = hubRequest.executeGet()
 			println (new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(response.body().string())))
 		} else if (hubApiVerb.equalsIgnoreCase("post")) {
-			response = hubRequest.executePost(new File(hubApiPayloadPath).text())
+			response = hubRequest.executePost(new Scanner(new File(hubApiPayloadPath)).useDelimiter("\\Z").next())
 			println(response.body().string())
 		} else if (hubApiVerb.equalsIgnoreCase("delete")) {
 			response = hubRequest.executeDelete()

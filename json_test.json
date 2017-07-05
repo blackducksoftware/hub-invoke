@@ -1,9 +1,9 @@
 {
-  "description": "this is a test for hub-invoke",
-  "name": "hub-invoke test",
+  "description": "this is a test for hub-invoke for Hal",
+  "name": "hub-invoke-hal-test",
   "projectLevelAdjustments": true,
   "projectOwner": "Integrations",
-  "projectTier": 1,
+  "projectTier": 3,
   "versionRequest": {
     "distribution": "EXTERNAL",
     "nickname": "string",
