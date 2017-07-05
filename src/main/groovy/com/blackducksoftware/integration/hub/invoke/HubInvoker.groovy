@@ -79,7 +79,7 @@ class HubInvoker {
 
 	@Value('${invoke.hub.api.payload.path}')
 	String hubApiPayloadPath
-	
+
 	@Value('${invoke.hub.api.query.variables}')
 	String hubApiQueryVariables
 
@@ -90,43 +90,46 @@ class HubInvoker {
 		RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger)
 		restConnection.connect();
 		HubRequest hubRequest = new HubRequest(restConnection)
-		
+
+		hubRequest.url = hubUrl
+		hubRequest.addUrlSegments(Arrays.asList(hubApiEndpoint.split("/")))
+
 		if (!hubApiQueryVariables.equalsIgnoreCase("")) {
-			hubRequest.url = hubUrl + hubApiEndpoint + "?" + hubApiQueryVariables
-		} else {
-			hubRequest.url = hubUrl + hubApiEndpoint
+			hubRequest.q = hubApiQueryVariables
 		}
 		
+		println (hubRequest.buildHttpUrl())
+
 		Response response
 		if (hubApiVerb.equalsIgnoreCase("get")) {
 			response = hubRequest.executeGet()
-			println (new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(response.body().string()))) //ugliest line of code ever
+			println (new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(response.body().string())))
 		} else if (hubApiVerb.equalsIgnoreCase("post")) {
 			response = hubRequest.executePost(new File(hubApiPayloadPath).text())
-			println(response)
+			println(response.body().string())
 		} else if (hubApiVerb.equalsIgnoreCase("delete")) {
 			response = hubRequest.executeDelete()
-			println(response)
+			println(response.body().string())
 		}
 		response.close()
 	}
 
-	
-	
+
+
 	HubServerConfig createHubServerConfig(Slf4jIntLogger slf4jIntLogger) {
 		HubServerConfigBuilder hubServerConfigBuilder = new HubServerConfigBuilder()
 
 		hubServerConfigBuilder.setHubUrl(getHubUrl())
-		//		hubServerConfigBuilder.setTimeout(getHubTimeout())
+		//hubServerConfigBuilder.setTimeout(getHubTimeout())
 		hubServerConfigBuilder.setUsername(getHubUsername())
 		hubServerConfigBuilder.setPassword(getHubPassword())
 
-		//		hubServerConfigBuilder.setProxyHost(getHubProxyHost())
-		//		hubServerConfigBuilder.setProxyPort(getHubProxyPort())
-		//		hubServerConfigBuilder.setProxyUsername(getHubProxyUsername())
-		//		hubServerConfigBuilder.setProxyPassword(getHubProxyPassword())
+		hubServerConfigBuilder.setProxyHost(getHubProxyHost())
+		hubServerConfigBuilder.setProxyPort(getHubProxyPort())
+		hubServerConfigBuilder.setProxyUsername(getHubProxyUsername())
+		hubServerConfigBuilder.setProxyPassword(getHubProxyPassword())
 
-		//		hubServerConfigBuilder.setAutoImportHttpsCertificates(getHubAutoImportCert())
+		//hubServerConfigBuilder.setAutoImportHttpsCertificates(getHubAutoImportCert())
 		hubServerConfigBuilder.setLogger(slf4jIntLogger)
 
 		hubServerConfigBuilder.build()
