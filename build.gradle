@@ -62,8 +62,10 @@ repositories {
 dependencies {
     compile 'org.springframework.boot:spring-boot-starter'
     compile 'org.codehaus.groovy:groovy-all:2.4.11'	
-    compile 'com.blackducksoftware.integration:hub-common:13.0.2'
-    
+    compile 'com.blackducksoftware.integration:hub-common:13.0.2'	
+	compile group: 'pl.jalokim.propertiestojson', name: 'java-properties-to-json', version: '1.2'
+	compile group: 'commons-io', name: 'commons-io', version: '2.5'
+	
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }
 
